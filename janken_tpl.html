@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <script src="js/jquery-2.1.3.min.js"></script>
+    <link rel="stylesheet" href="css/sample.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <title>野球しようぜ！</title>
+</head>
+
+<body>
+
+    <header>
+        <h1>野球しようぜ！</h1>
+    </header>
+
+    <main>
+        <button class="btn play" id="show_modal">あそびかた</button>
+        <!-- モーダル部分 -->
+        <div class="modal-wrapper" id="signup-modal">
+            <div class="modal">
+                <div id="close-modal">
+                    <i class="fa fa-close"></i>
+                  </div>
+                <div class="introduction">
+                    <img src="/img/doaraface.gif">
+                    <h4>ゲームの説明</h4>
+                    <p>あなたはピッチャーです。<br>
+                        3種類のボールの中から好きなボールを<br>
+                        投げてね！<br>
+                        3アウトとるまでにできるだけ失点しないでね！
+                    </p>
+                </div>
+            </div>
+        </div>
+        <!-- モーダルここまで -->
+
+        <div class="wrapper">   
+             <!-- ピッチャーが出した手 -->
+            <div class="you">
+                <h3>あなた</h3>
+                <ul>
+                    <li id="straight">
+                        <img src="img/baseball.jpg"><br>
+                        ストレート
+                    </li>
+                    <li id="curve">
+                        <img src="img/baseball.jpg"><br>
+                        カーブ
+                    </li>
+                    <li id="fork">
+                        <img src="img/baseball.jpg"><br>
+                        フォーク
+                    </li>
+                </ul>
+            </div>
+            <h2>VS</h2>
+             <!-- バッター部分 -->
+            <div class="pc_hands">
+                <h3>バッター</h3>
+                <span id="batter">トラッキー</span>
+                <div id="picture">
+                    <img src="img/tracky.jpg">
+                    </div>
+             </div>
+         </div>
+        
+        <div class="judgment">
+            <div id="judgment">一球結果</div>
+            <div id="hit">打者結果</div>
+        </div>
+        <div id="tokuten">得点：<span id="score">0</span></div>
+         <!-- BSOボード -->
+        <div class="blackboardbackground">
+            <div class="blackboard">
+                <div class="BSO">
+                    <div class=text>B</div>
+                    <div class=bbox id="ballball"></div>
+                </div>
+                <div class="BSO">
+                    <div class=text>S</div>
+                    <div class=sbox id="strikestrike"></div>
+                </div>
+                <div class="BSO">
+                    <div class=text>O</div>
+                    <div class=box id="outout"></div>
+                </div>
+            </div>
+            <div class="home" id="homebase">
+                <div class="basebase" id="first_base">
+                    <img src="img/base.jpeg">
+                </div>
+            </div>
+        </div>
+                
+        <div class="countboard">
+            <div class="image">
+                <p>カウント：<span id="strike">0</span>ストライク<span id="ball">0</span>ボール</p>
+            </div>
+            <div id="situation">
+                <p>アウトカウント：<span id="out">0</span>アウト</p>
+            </div>
+            <div id="runner">ランナー：なし</div>
+            <div id="base">ランナー：<span id="first_runner">0</span>,<span id="second_runner">0</span>,<span
+                id="third_runner">0</span>塁</div>
+        </div>
+
+        <button class="btn"  id="resetButton">もう1回あそぶ</button>
+    </main>
+
+    <footer></footer>
+    
+    <script>
+//あそびかたをクリックしたときのモーダル表示
+$("#show_modal").on("click",function(){
+    $("#signup-modal").fadeIn();
+});
+
+// モーダルを閉めるとき
+$("#close-modal").on("click",function(){
+    $("#signup-modal").fadeOut();
+});
+
+
+// 打者の順番を管理する配列
+    const batters = [
+        {name:"トラッキー", picture:'<img src="img/tracky.jpg">'},
+        {name:"ドアラ", picture:'<img src="img/doara.png">'},
+        {name:"つば九郎", picture:'<img src="img/tsubakuro.jpg">'},
+        {name:"大谷翔平", picture:'<img src="img/ohtani.jpg">'} 
+    ];
+    
+    let currentBatterIndex = 0; // 現在の打者のインデックスを追跡
+    let outs = 0;
+//   ストレートを投げたとき
+    $("#straight").on("click", function () {
+        const r = Math.ceil(Math.random() * 3);
+        view = "";
+        account="";
+            if (r === 1) {
+                view = 'ストライク'
+                updateStrikeCount();
+                if ($("#strike").text() === "3") {
+                    account='三振'
+                    updateOutcount();
+
+                    if (outs === 3) {
+                        // アウトが3つになったらゲーム終了
+                        alert("ゲーム終了！");
+                        return;
+                    }
+                    nextBatter();
+                }
+            }
+
+            if (r === 2) {
+                view = 'ボール';
+                if ($("#ball").text() < "4") {
+                    updateBallCount();
+                    if ($("#ball").text() === "4") {
+                        account='フォアボール'
+                        // ボールカウントが4になったら打者が出塁する
+                        nextBatter();
+                        // ボールカウントが4になった後のランナーの処理
+                        updateBaseRunner();
+                    }
+                }
+            }
+
+            if (r === 3) {
+                view = 'ヒット'
+                account='ヒット'
+                nextBatter();
+                updateBaseRunner();
+            }
+            $("#judgment").html(`今のボールは${view}です`);
+            $("#hit").html(`打者結果:${account}`);
+    });
+
+// カーブを投げたとき
+    $("#curve").on("click", function () {
+        const r = Math.ceil(Math.random() * 3);
+        view = "";
+        account="";
+            if (r === 1) {
+                view = 'ストライク'
+                updateStrikeCount();
+                if ($("#strike").text() === "3") {
+                    account='三振'
+                    updateOutcount();
+                    if (outs === 3) {
+                        // アウトが3つになったらゲーム終了
+                        alert("ゲーム終了！");
+                        return;
+                    }
+                    nextBatter();
+                }
+            }
+
+            if (r === 2) {
+                view = 'ボール';
+                if ($("#ball").text() < "4") {
+                    updateBallCount();
+                    if ($("#ball").text() === "4") {
+                        account='フォアボール'
+                        // ボールカウントが4になったら打者が出塁する
+                        nextBatter();
+                        // ボールカウントが4になった後のランナーの処
+                        updateBaseRunner();
+                    }
+                }
+            }
+
+            if (r === 3) {
+                view = 'ヒット'
+                account='ヒット'
+                nextBatter();
+                updateBaseRunner();
+            }
+            
+            $("#judgment").html(`今のボールは${view}です`);
+            $("#hit").html(`打者結果:${account}`);
+     });
+
+            
+// フォークを投げたとき
+    $("#fork").on("click", function () {
+        const r = Math.ceil(Math.random() * 3);
+        view = "";
+        account="";
+        if (r === 1) {
+            view = 'ストライク'
+            updateStrikeCount();
+            if ($("#strike").text() === "3") {
+                account='三振'
+                updateOutcount();
+                if (outs === 3) {
+                // アウトが3つになったらゲーム終了
+                    alert("ゲーム終了！");
+                    return;
+                }
+            nextBatter();
+             }
+        }
+
+        if (r === 2) {
+            view = 'ボール';
+            if ($("#ball").text() < "4") {
+                updateBallCount();
+                if ($("#ball").text() === "4") {
+                    account='フォアボール'
+                // ボールカウントが4になったら打者が出塁する
+                nextBatter();
+                // ボールカウントが4になった後のランナーの処
+                        updateBaseRunner();
+                    }
+                }
+            }
+
+        if (r === 3) {
+            view = 'ヒット'
+            account='ヒット'
+            nextBatter();
+            updateBaseRunner();
+            }
+        
+            $("#judgment").html(`今のボールは${view}です`);
+            $("#hit").html(`打者結果:${account}`);
+    });
+
+
+
+
+// ランナーの進塁についての関数
+    function updateBaseRunner() {
+        // 現在のランナーの状態を取得
+        let first = parseInt($("#first_runner").text());
+        let second = parseInt($("#second_runner").text());
+        let third = parseInt($("#third_runner").text());
+        let score = parseInt($("#score").text());
+
+        // ヒットによるランナーの進塁処理
+            if (third === 1) {
+                // 3塁ランナーが得点
+                    third = 0;
+                    score += 1;
+                }
+            if (second === 1) {
+                    // 2塁ランナーが3塁へ進塁
+                    third = 1;
+                    second = 0;
+                }
+            if (first === 1) {
+                    // 1塁ランナーが2塁へ進塁
+                    second = 1;
+                }
+
+        // 打者が1塁に進塁
+            first = 1;
+
+        // 更新された状態を画面に反映
+        $("#first_runner").text(first);
+        $("#second_runner").text(second);
+        $("#third_runner").text(third);
+        $("#score").text(score);
+
+        // ストライクとボールのカウントをリセット
+        $("#strike").text("0");
+        $("#ball").text("0");
+        $("#strikestrike").html("");
+        $("#ballball").html("");
+       
+        // 出塁状況の更新
+    updateRunnerDisplay();
+}
+
+
+
+//ランナーの状況についての関数
+    function updateRunnerDisplay() {
+    // 各塁のランナー状況を取得
+    let first = parseInt($("#first_runner").text());
+    let second = parseInt($("#second_runner").text());
+    let third = parseInt($("#third_runner").text());
+
+    // 表示用のテキストを組み立て
+    let runnerDisplay = "ランナー：";
+    let runners = [];
+
+    // 各塁にランナーがいる場合、その情報をrunners配列に追加
+    if (first === 1) {
+        runners.push("1塁");
+    }
+    if (second === 1) {
+        runners.push("2塁");
+    }
+
+    if (third === 1) {
+        runners.push("3塁");
+    }
+
+    // runners配列に格納されたランナー情報をカンマ区切りの文字列に結合
+    if (runners.length > 0) {
+        runnerDisplay += runners.join(", ");
+    } else {
+        // ランナーが一人もいない場合
+        runnerDisplay += "なし";
+    }
+    console.log(runnerDisplay);
+    // 組み立てたテキストを画面に表示
+    $("#runner").text(runnerDisplay);
+
+    // 条件に応じて画像を切り替える
+    if (first === 1 && second === 1 && third === 1) {
+        // 1塁、2塁、3塁にランナーがいる場合
+         $("#first_base").html('<img src="img/fullbase.png">');
+    } else if (first === 1 && second === 1) {
+        // 1塁と2塁にランナーがいる場合
+        $("#first_base").html('<img src="img/secondbase.png">');
+    } else if (first === 1) {
+        // 1塁にランナーがいる場合
+        $("#first_base").html('<img src="img/firstbase.png">');
+    } else {
+        // ランナーがいない場合
+        $("#first_base").html('<img src="img/base.jpeg">');
+    }
+}
+
+
+
+// BSOボードの●を作る関数:ボール
+    function displayBallSymbols(number) {
+        let symbol = '';
+            if (number === 1) {
+                symbol = '<img src="img/green.png">';
+            } else if (number === 2) {
+                symbol = '<img src="img/green.png"><img src="img/green.png">';
+            } else if (number >= 3) {
+                symbol = '<img src="img/green.png"><img src="img/green.png"><img src="img/green.png">';
+            }
+            return symbol;
+           
+    };
+
+// BSOボードの●を作る関数:ストライク
+function displayStrikeSymbols(number) {
+        let symbol = '';
+            if (number === 1) {
+                symbol = '<img src="img/yellow.png">';
+            } else if (number === 2) {
+                symbol = '<img src="img/yellow.png"><img src="img/yellow.png">';
+            } else if (number >= 3) {
+                symbol = '<img src="img/yellow.png"><img src="img/yellow.png"><img src="img/yellow.png">';
+            }
+            return symbol;
+           
+    };
+
+// BSOボードの●を作る関数:アウト
+function displayOutSymbols(number) {
+        let symbol = '';
+            if (number === 1) {
+                symbol = '<img src="img/red.png">';
+            } else if (number === 2) {
+                symbol = '<img src="img/red.png"><img src="img/red.png">';
+            } else if (number >= 3) {
+                symbol = '<img src="img/red.png"><img src="img/red.png"><img src="img/red.png">';
+            }
+            return symbol;
+          
+    };
+
+// ボールカウントを更新する関数
+    function updateBallCount() {
+        let ballCount = $("#ball").text();
+        ballCount = parseInt(ballCount) + 1;
+        $("#ball").text(ballCount);
+        $("#ballball").html(displayBallSymbols(ballCount));
+       
+    };
+
+// ストライクカウントを更新する関数
+    function updateStrikeCount() {
+        let strikeCount = $("#strike").text();
+        strikeCount = parseInt(strikeCount) + 1;
+        $("#strike").text(strikeCount);
+        $("#strikestrike").html(displayStrikeSymbols(strikeCount));
+    };
+
+// アウトカウントを更新する関数
+    function updateOutcount() {
+        outs++
+        $("#out").text(outs);
+        $("#outout").html(displayOutSymbols(outs));
+        
+    };
+
+// 得点を更新する関数
+    function updateScore() {
+            let score = parseInt($("#score").text());
+            score++;
+            $("#score").text(score);
+    };
+
+ // 次の打者に移動する関数
+    function nextBatter() {
+            currentBatterIndex++;
+        if (currentBatterIndex >= batters.length) {
+                currentBatterIndex = 0;
+            }
+        $("#batter").text(batters[currentBatterIndex].name);
+        $("#picture").html(batters[currentBatterIndex].picture);
+        $("#strike").text("0");
+        $("#strikestrike").html("");
+        $("#ball").text("0");
+        $("#ballball").html("");
+    };
+
+// リセットボタンのクリックイベント
+    $("#resetButton").on("click", function () {
+        // ゲームの状態をリセット
+        outs = 0;
+        currentBatterIndex = 0;
+        $("#batter").html(batters[currentBatterIndex].name + batters[currentBatterIndex].picture);
+        $("#picture").empty(); // 画像をクリアする
+        $("#strike").text("0");
+        $("#strikestrike").html("");
+        $("#ball").text("0");
+        $("#ballball").html("");
+        $("#out").text("0");
+        $("#outout").html("");
+        $("#score").text("0");
+        $("#first_runner").text("0");
+        $("#second_runner").text("0");
+        $("#third_runner").text("0");
+        $("#first_base").html('<img src="img/base.jpeg">');
+        $("#runner").text("ランナー：なし");
+        // updateBaseRunner();
+    });
+       
+
+    </script>
+</body>
+
+</html>
